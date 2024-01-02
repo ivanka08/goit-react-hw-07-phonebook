@@ -1,11 +1,12 @@
-
 import { Contact } from "./Contact/Contact";
-import { useSelector, useDispatch } from "react-redux";
+import { useDispatch } from "react-redux";
 import { useEffect } from "react";
+import { createSelector } from "reselect";
 
 import { fetchContacts } from "../../redux/contacts-operations";
+import { selectContacts, selectFilter } from "../../redux/selectors";
 
-export const ContactList = () => {
+export const ContactList = ({ state }) => {
 
   const dispatch = useDispatch();
 
@@ -13,29 +14,28 @@ export const ContactList = () => {
     dispatch(fetchContacts());
   }, [dispatch]);
 
-  const contacts = useSelector(store => store.contacts.items);
-  const filter = useSelector(store => store.filter);
+  // Access contacts and filter directly from selectors
+  const filteredContacts = selectVisibleContacts(state);
 
-  const filterContacts = () => {
-    if (!filter) {
-      return contacts;
-    }
+  return (
+    <ul className="">
+      {filteredContacts.length > 0 ? (
+        filteredContacts.map((contact) => (
+          <Contact key={contact.id} contact={contact} />
+        ))
+      ) : (
+        <p>no matches <span>☹</span></p>
+      )}
+    </ul>
+  );
+};
 
-    const normalizedValue = filter.toLowerCase();
-    const filteredContactsArray = contacts.filter(contact =>
-      contact.name.toLowerCase().includes(normalizedValue));
-    
-    return filteredContactsArray;
+// Define the memoized selector for visible contacts
+const selectVisibleContacts = createSelector(
+  [selectContacts, selectFilter],
+  (contacts, filter) => {
+    return contacts.filter((contact) =>
+      contact.name.toLowerCase().includes(filter.toLowerCase())
+    );
   }
-
-  const filteredContacts = filterContacts();
-
-  return <ul className="">
-    {filteredContacts.length > 0 ? filteredContacts.map((contact =>
-      <Contact key={contact.id} contact={contact}/>
-    )) : <p> no matches <span>☹</span></p>}
-  </ul>
-}
-
-
-
+);
